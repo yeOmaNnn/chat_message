@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат: {{ room }} ({{ username }})</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2><i class="fas fa-door-open"></i> Комната: {{ room }}</h2>
+            <div class="user-info">
+                <span><i class="fas fa-user"></i> {{ username }}</span>
+                <a href="{{ url_for('index') }}" class="btn btn-sm" id="leave-btn">
+                    <i class="fas fa-sign-out-alt"></i> Выйти
+                </a>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="messages">
+            {% for msg in messages %}
+                <div class="message {% if msg.username == username %}my-message{% else %}other-message{% endif %}">
+                    <div class="message-header">
+                        <strong>{{ msg.username }}</strong>
+                        <span class="time">{{ msg.time }}</span>
+                    </div>
+                    <div class="message-text">{{ msg.message }}</div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="chat-input">
+            <input type="text" id="message-input" class="form-control" placeholder="Введите сообщение..." autocomplete="off">
+            <button id="send-btn" class="btn btn-primary">
+                <i class="fas fa-paper-plane"></i> Отправить
+            </button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const socket = io();
+            const username = "{{ username }}";
+            const room = "{{ room }}";
+
+            socket.emit('join', { username: username, room: room });
+
+            const messagesDiv = document.getElementById('messages');
+            const sendBtn = document.getElementById('send-btn');
+            const messageInput = document.getElementById('message-input');
+
+            function sendMessage() {
+                const message = messageInput.value.trim();
+                if (message) {
+                    socket.emit('send_message', {
+                        username: username,
+                        room: room,
+                        message: message
+                    });
+                    messageInput.value = '';
+                    messageInput.focus();
+                }
+            }
+
+            sendBtn.addEventListener('click', sendMessage);
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendMessage();
+            });
+
+            socket.on('receive_message', (data) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${data.username === username ? 'my-message' : 'other-message'}`;
+                messageDiv.innerHTML = `
+                    <div class="message-header">
+                        <strong>${escapeHtml(data.username)}</strong>
+                        <span class="time">${data.time}</span>
+                    </div>
+                    <div class="message-text">${escapeHtml(data.message)}</div>
+                `;
+                messagesDiv.appendChild(messageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+
+            socket.on('system_message', (data) => {
+                const systemDiv = document.createElement('div');
+                systemDiv.className = 'system-message';
+                systemDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${data.msg} (${data.time})`;
+                messagesDiv.appendChild(systemDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+
+            const leaveBtn = document.getElementById('leave-btn');
+            leaveBtn.addEventListener('click', (e) => {
+                socket.emit('leave', { username: username, room: room });
+                setTimeout(() => {
+                    window.location.href = leaveBtn.href;
+                }, 100);
+                e.preventDefault();
+            });
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            socket.on('connect', () => console.log('✅ Connected'));
+            socket.on('connect_error', (error) => console.error('❌ Connection error:', error));
+
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="login-container">
+    <div class="card">
+        <h1><i class="fas fa-comments"></i>Чат с комнатами</h1>
+        <form action="{{ url_for('join_chat') }}" method="POST">
+            <div class="form-group">
+                <label for="username">Ваше имя:</label>
+                <input type="text" id="username" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="room">Название комнаты:</label>
+                <input type="text" id="room" name="room" class="form-control" placeholder="общая" value="общая" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Войти в чат</button>
+        </form>
+    </div>
+</div>
+<script src="js/js.js"></script>
+</body>
+</html>
